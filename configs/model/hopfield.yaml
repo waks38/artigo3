@@ -1,0 +1,4 @@
+aggregator: hopfield
+dim: 128          # encoder output dim = aggregator dim
+beta: null        # inverse temperature; null -> 1/sqrt(dim)
+num_heads: 1

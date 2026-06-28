@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.python-version.local
+
+# uv
+# (uv.lock IS committed)
+
+# Data & artifacts (heavy / reproducible)
+data/raw/
+data/processed/
+results/
+outputs/
+checkpoints/
+*.ckpt
+*.pt
+
+# Experiment tracking
+wandb/
+mlruns/
+lightning_logs/
+
+# Hydra run dirs
+multirun/
+.hydra/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/

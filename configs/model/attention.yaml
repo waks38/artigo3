@@ -1,0 +1,5 @@
+# Baseline: gated attention pooling (Ilse et al., 2018)
+aggregator: attention
+dim: 128
+hidden: 128
+gated: true

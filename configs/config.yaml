@@ -1,0 +1,19 @@
+defaults:
+  - data: mnist_bags
+  - model: attention   # default runs without the optional `hopfield` extra
+  - _self_
+
+seed: 0
+trainer:
+  max_epochs: 100
+  accelerator: auto
+  devices: 1
+  deterministic: true
+
+optim:
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+
+wandb:
+  project: hopmil
+  mode: online   # online | offline | disabled

@@ -1,0 +1,7 @@
+# Classic tabular MIL benchmark (Andrews et al., 2002) — image-region features
+name: elephant
+loader: classic
+root: data/raw/mil
+normalize: true
+num_classes: 1
+in_dim: 230
