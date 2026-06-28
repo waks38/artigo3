@@ -15,7 +15,11 @@ reproducibility, clean ablations, and figure-generating experiments.
 
 **Compute target: Kaggle Notebooks** (free GPU). Code must run both locally and
 on Kaggle (workflow: push to GitHub → Kaggle notebook clones + `pip install -e .`
-→ calls the entrypoint). See `docs/ROADMAP.md` for the full plan and open decisions.
+→ calls the entrypoint).
+
+**Continuing the work?** Read `docs/NEXT_STEPS.md` first (handoff with the next
+task — Marco 1 — spelled out), then `docs/ROADMAP.md` for the full plan,
+experimental design, and Bayesian methodology.
 
 ## Commands
 
