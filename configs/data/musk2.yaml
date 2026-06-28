@@ -1,0 +1,8 @@
+# Classic tabular MIL benchmark (Dietterich et al., 1997) — musk molecular descriptors
+# 102 bags (39 pos / 63 neg), 166 features per instance.
+name: musk2
+loader: classic
+root: data/raw/mil
+normalize: true
+num_classes: 1
+in_dim: 166

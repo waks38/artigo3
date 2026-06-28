@@ -292,6 +292,8 @@ def main(cfg: DictConfig) -> None:
     log.info("VEREDITO BAYESIANO (correlated t-test + ROPE=+/-%.3f, runs=%d)", cfg.rope, n_repeats)
     bayes_rows = []
     for a, b in cfg.pairs:
+        if a not in scores or b not in scores:
+            continue  # pair references an aggregator not in this run's `aggregators`
         for m in metric_keys:
             sa, sb = scores[a][m], scores[b][m]
             if np.isnan(sa).any() or np.isnan(sb).any():
