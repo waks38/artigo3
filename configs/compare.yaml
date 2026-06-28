@@ -21,9 +21,10 @@ model_specifics:
   attention: {hidden: 128, gated: true}
   hopfield: {beta: null, num_heads: 1, hidden_size: 32}   # ml-jku MIL recipe: small association bottleneck, learned sharpness (beta default)
 
-# Repeated stratified k-fold. "The best": 10×10 → 100 paired scores per aggregator.
+# Repeated stratified k-fold. Benavoli et al. (2017) use 10x10=100 paired scores
+# in their example (rho=1/10); we use 5x10=50 — same procedure, ~half the cost.
 cv:
-  n_repeats: 10
+  n_repeats: 5
   n_folds: 10
   val_frac: 0.2
 
