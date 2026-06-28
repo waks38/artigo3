@@ -206,6 +206,19 @@ wheels = [
 ]
 
 [[package]]
+name = "baycomp"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e9/5f/c9ae9b86de6681401a2a57510eb581fd593d0897e7e43b4b1c1eede87b20/baycomp-1.0.3.tar.gz", hash = "sha256:32b25ad7b16d5b251ddb9f6110a32d7b3953b987096da1d25ef277935d25daec", size = 15918, upload-time = "2023-07-22T15:55:11.083Z" }
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -704,7 +717,9 @@ name = "hopmil"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "baycomp" },
     { name = "hydra-core" },
+    { name = "joblib" },
     { name = "lightning" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -734,9 +749,11 @@ hopfield = [
 
 [package.metadata]
 requires-dist = [
+    { name = "baycomp", specifier = ">=1.0.2" },
     { name = "hopfield-layers", marker = "extra == 'hopfield'", git = "https://github.com/ml-jku/hopfield-layers.git" },
     { name = "hydra-core", specifier = ">=1.3" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29" },
+    { name = "joblib", specifier = ">=1.3" },
     { name = "jupyter", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "lightning", specifier = ">=2.2" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.8" },

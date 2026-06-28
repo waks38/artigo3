@@ -17,6 +17,8 @@ dependencies = [
     "pandas>=2.1",
     "torchvision>=0.17",
     "torchmetrics>=1.3",
+    "baycomp>=1.0.2",
+    "joblib>=1.3",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +38,7 @@ dev = [
 
 [project.scripts]
 hopmil-train = "hopmil.training.train:main"
+hopmil-compare = "hopmil.eval.compare:main"
 
 [build-system]
 requires = ["hatchling"]

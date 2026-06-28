@@ -10,6 +10,17 @@ trainer:
   devices: 1
   deterministic: true
 
+# Cross-validation: which fold is held out for test this run. The four
+# aggregators must share (n_folds, fold, seed) so their per-fold scores pair up.
+cv:
+  n_folds: 10
+  fold: 0
+  val_frac: 0.2
+
+loader:
+  batch_size: 8
+  num_workers: 0
+
 optim:
   lr: 1.0e-3
   weight_decay: 1.0e-4

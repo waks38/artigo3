@@ -1,0 +1,3 @@
+# Naive floor: max-pooling (no learned per-instance weights)
+aggregator: max
+dim: 128

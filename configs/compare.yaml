@@ -1,0 +1,63 @@
+# Marco 2 — fair comparison of the four aggregators on ONE dataset.
+# Run: hopmil-compare data=elephant   (one W&B run named after the dataset)
+defaults:
+  - data: elephant
+  - _self_
+
+seed: 0
+
+# Parallel fits across CPU cores (independent fits). 1 = sequential; -1 = all cores.
+n_jobs: 1
+
+# The four aggregators, compared on identical folds. Order = report order.
+aggregators: [mean, max, attention, hopfield]
+
+# Encoder/aggregator embedding dim (shared, fixed).
+dim: 128
+
+# Aggregator-specific hyperparameters — FIXED defaults, NO per-aggregator tuning
+# (mean/max have none). Mirrors configs/model/*.yaml.
+model_specifics:
+  attention: {hidden: 128, gated: true}
+  hopfield: {beta: null, num_heads: 1}
+
+# Repeated stratified k-fold. "The best": 10×10 → 100 paired scores per aggregator.
+cv:
+  n_repeats: 10
+  n_folds: 10
+  val_frac: 0.2
+
+optim:
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+
+loader:
+  batch_size: 8
+  num_workers: 0
+
+trainer:
+  max_epochs: 100
+  accelerator: cpu          # classics run local/CPU
+  devices: 1
+  deterministic: false
+
+early_stopping:
+  monitor: val/auc
+  mode: max
+  patience: 20
+
+# Inferential layer (see docs/METHODOLOGY.md).
+rope: 0.01                  # half-width of the ROPE, in AUC points
+decision_threshold: 0.95    # assert equivalence/superiority when P >= this
+
+# Pairs (a, b) tested. Thesis: hopfield ≈ attention; both > mean/max.
+pairs:
+  - [hopfield, attention]
+  - [hopfield, mean]
+  - [hopfield, max]
+  - [attention, mean]
+  - [attention, max]
+
+wandb:
+  project: artigo-3
+  mode: online              # online | offline | disabled

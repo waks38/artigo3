@@ -18,11 +18,20 @@ import numpy as np
 import torch
 from torchvision import datasets
 
-from hopmil.data.mil_dataset import Bag, MILDataset
+from hopmil.data.mil_dataset import MILDataset
+from hopmil.data.synthetic import make_witness_bags
 
 CIFAR10_CLASSES = [
-    "airplane", "automobile", "bird", "cat", "deer",
-    "dog", "frog", "horse", "ship", "truck",
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse",
+    "ship",
+    "truck",
 ]
 
 # fast.ai mirror (PNG image folders) — used as a fallback when the canonical
@@ -65,6 +74,7 @@ def _load_cifar10_fastai(root: str, train: bool) -> tuple[torch.Tensor, torch.Te
             lbls.append(ci)
     return torch.from_numpy(np.stack(imgs)), torch.tensor(lbls)
 
+
 # CIFAR-10 per-channel normalization
 _MEAN = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
 _STD = torch.tensor([0.2470, 0.2435, 0.2616]).view(3, 1, 1)
@@ -75,32 +85,30 @@ class CIFARBags(MILDataset):
         self,
         root: str = "data/raw",
         train: bool = True,
-        target_class: int = 0,          # default: airplane
-        mean_bag_size: float = 10.0,
-        var_bag_size: float = 2.0,
+        target_class: int = 0,  # default: airplane
+        bag_size: int = 15,
+        num_witnesses: int = 1,
+        positive_ratio: float = 0.5,
         num_bags: int = 250,
         seed: int = 0,
         download: bool = True,
     ) -> None:
         self.target_class = target_class
         self.target_name = CIFAR10_CLASSES[target_class]
-        data, targets = _load_cifar10(root, train, download)            # (N,32,32,3) uint8
-        images = data.permute(0, 3, 1, 2).float().div(255.0)            # (N,3,32,32)
+        data, targets = _load_cifar10(root, train, download)  # (N,32,32,3) uint8
+        images = data.permute(0, 3, 1, 2).float().div(255.0)  # (N,3,32,32)
         images = (images - _MEAN) / _STD
 
-        g = torch.Generator().manual_seed(seed)
-        sizes = torch.normal(mean_bag_size, var_bag_size, (num_bags,), generator=g)
-        sizes = sizes.round().clamp(min=1).int()
-
-        self.bags = []
-        for n in sizes.tolist():
-            idx = torch.randint(0, len(targets), (n,), generator=g)
-            instances = images[idx]                                  # (n,3,32,32)
-            instance_labels = (targets[idx] == target_class).long()  # (n,)
-            label = instance_labels.any().long()
-            self.bags.append(
-                Bag(instances=instances, label=label, instance_labels=instance_labels)
-            )
+        self.bags = make_witness_bags(
+            images,
+            targets,
+            target_class,
+            num_bags=num_bags,
+            bag_size=bag_size,
+            num_witnesses=num_witnesses,
+            positive_ratio=positive_ratio,
+            seed=seed,
+        )
 
     @staticmethod
     def denormalize(x: torch.Tensor) -> torch.Tensor:

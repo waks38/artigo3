@@ -25,8 +25,10 @@ experimental design, and Bayesian methodology.
 
 ```bash
 uv sync --extra dev                # install env (.venv); for the Hopfield aggregator add --extra hopfield
-uv run hopmil-train model=attention data=mnist_bags    # one run (Hydra entrypoint) — train.py still a stub
+uv run hopmil-train model=attention data=mnist_bags    # one training run (Hydra entrypoint)
 uv run hopmil-train -m model=attention,hopfield seed=0,1,2   # multirun sweep
+uv run hopmil-compare data=elephant    # Marco 2: compare all 4 aggregators (repeated k-fold + Bayesian)
+uv run hopmil-compare data=fox wandb.mode=disabled cv.n_repeats=2 cv.n_folds=3   # quick check
 uv run pytest                      # all tests
 uv run pytest tests/test_aggregators.py::test_unknown_aggregator_raises   # single test
 uv run pytest -m "not slow"        # skip the hopfield/import-heavy tests
@@ -72,18 +74,30 @@ Data flow per bag: `encoder` → `aggregator` → `head`.
   `Bag.instance_labels` is populated only for synthetic data (MNIST/CIFAR bags),
   and drives the interpretability eval (`eval/metrics.py::instance_localization_auc`).
 
-### Datasets (3 families, same pipeline)
+### Datasets (same pipeline; tabular + synthetic-image + real-histopathology)
 
-| Loader | Instance | Visible? | `instance_labels`? | Role |
-|---|---|---|---|---|
-| `data/mnist_bags.py` `MNISTBags` | 28×28 digit | yes | yes (target digit) | sanity check + interpretability |
-| `data/cifar_bags.py` `CIFARBags` | 32×32 RGB image | yes | yes (target class) | realistic image MIL + interpretability |
-| `data/classic.py` `ClassicMIL` | 230-d feature vector | no | **None** | standard tabular benchmark (elephant/fox/tiger) |
+| Loader | Instance | `instance_labels`? | Role |
+|---|---|---|---|
+| `data/mnist_bags.py` `MNISTBags` | 28×28 digit | yes (target digit) | sanity check + interpretability |
+| `data/fashion_mnist_bags.py` `FashionMNISTBags` | 28×28 grayscale | yes (target class) | harder-texture synthetic image MIL |
+| `data/cifar_bags.py` `CIFARBags` | 32×32 RGB image | yes (target class) | realistic image MIL + interpretability |
+| `data/colon_cancer.py` `ColonCancerBags` | 27×27 RGB patch (nucleus) | yes (nucleus class) | **real** histopathology + interpretability |
+| `data/ucsb_breast.py` `UCSBBreastBags` | 32×32 RGB grid patch | **None** | **real** histopathology, bag-label only |
+| `data/classic.py` `ClassicMIL` | 230-d feature vector | **None** | standard tabular benchmark (elephant/fox/tiger) |
 
-Synthetic bags (MNIST/CIFAR) sample bag sizes from a seeded Gaussian and assemble
-instances from the base dataset; the bag is positive iff it contains ≥1 target
-instance. `ClassicMIL` parses PRTools `.mat` files (Andrews 2002, via Figshare),
-grouping rows by `ident.milbag`; there are no true instance labels.
+Real-histo data is **not auto-downloadable** (Warwick/UCSB hosts gated/down):
+download once (Kaggle mirrors) under each loader's `root`; the loaders parse the
+documented layout and raise a clear hint if files are missing. Colon Cancer:
+bag=image, instance=27×27 patch per nucleus, positive iff ≥1 epithelial nucleus
+(witnesses known → localization applies). UCSB Breast: bag=image, instance=32×32
+grid patch (near-white tiles dropped), label malignant/benign from the filename.
+
+Synthetic bags (MNIST/Fashion/CIFAR) use one **fixed controlled condition** (no
+OFAT sweeps): shared assembly in `data/synthetic.py::make_witness_bags` builds
+**fixed-size bags (15)**, **exactly one witness** in a positive bag, **balanced**
+(50%), fixed `num_bags` (250) — seeded/reproducible. `ClassicMIL` parses PRTools
+`.mat` files (Andrews 2002, via Figshare), grouping rows by `ident.milbag`; no
+true instance labels.
 
 ## Conventions
 
@@ -112,12 +126,41 @@ grouping rows by `ident.milbag`; there are no true instance labels.
 - All 3 dataset loaders load real data (MNIST/CIFAR/elephant·fox·tiger).
 - Notebooks: `01` (MNIST-bags), `02` (tiger/elephant tabular), `03` (CIFAR-bags) —
   each walks data → encoder → aggregator → head with shapes and figures.
-- Tests pass (`pytest -m "not slow"`).
+- **Marco 1 done**: `data/datamodule.py` (`MILDataModule`, stratified k-fold +
+  train/val/test + `mil_collate`) and `training/train.py` (full Hydra→Lightning
+  wiring, runs `fit`+`test`). Configs `model/{mean,max}.yaml` added; `cv`/`loader`
+  groups in `config.yaml`; synthetic `var_bag_size=0` (fixed bag size). Verified:
+  `hopmil-train data=elephant model=attention wandb.mode=disabled` trains end-to-end.
+- Tests pass (`pytest -m "not slow"`), incl. `test_datamodule.py` (fold invariants).
+- **Marco 2 done**: `eval/compare.py` (entrypoint `hopmil-compare`) runs the 4
+  aggregators through the *same* repeated stratified k-fold (paired), default
+  10×10; `eval/stats.py` wraps `baycomp.two_on_single` → `BayesResult`
+  (`p_a_better/p_rope/p_b_better` — orientation locked by `test_stats.py`). One
+  W&B run per dataset (project `artigo-3`, run=dataset); CSVs to
+  `results/<dataset>_{folds,summary,bayesian}.csv`; clean terminal progress.
+  Methodology written in `docs/METHODOLOGY.md`. Builders shared via
+  `training/factory.py`. Deps `baycomp`, `joblib` added.
+- **Full metric suite**: every fold logs AUROC, AUPRC, accuracy, balanced_acc, F1,
+  precision, recall, MCC, brier, log_loss, and (synthetic/colon) localization AUC
+  (`eval/metrics.py`); all go to the CSVs/W&B and the Bayesian test runs on every
+  well-defined metric. `n_jobs` parallelizes folds (joblib).
+- **6 image datasets + extras**: added `fashion_mnist_bags`, and real
+  histopathology `colon_cancer` (witnesses → localization) and `ucsb_breast`
+  (bag-label only). Parsers tested against synthetic fixtures (`test_histopath.py`).
+
+- **Synthetic design simplified**: dropped the OFAT sweeps (old E3–E5); synthetic
+  bags now a single fixed condition (bag=15, 1 witness, balanced) via
+  `data/synthetic.py`. Study = **E1 (classics, local/CPU) + E2 (image, Kaggle/GPU)**.
+- **Kaggle runner**: `kaggle/run.ipynb` (+ `kaggle/README.md`) clones the repo,
+  installs `[hopfield]`, reads `WANDB_API_KEY` from a Secret, runs `compare` on GPU
+  for the image datasets (skips real-histo if its `root` isn't mounted), saves CSVs
+  to `/kaggle/working`. `QUICK=True` → tiny smoke into project `artigo-3-smoke`.
 
 **Pending (next steps, in rough order):**
-1. `training/train.py` — the Hydra→Lightning wiring is still a stub raising
-   `NotImplementedError`. This is the blocker for actually training/comparing.
-2. A `DataModule` (dataset + train/val/test split + `mil_collate`).
-3. W&B logging conventions + how to recover results for the paper (offline sync from Kaggle).
-4. Kaggle runner notebook (`kaggle/`).
-5. Per-experiment report convention (`experiments/`).
+1. Create the **GitHub repo** (Kaggle clones from it) and upload colon/UCSB as
+   **Kaggle Datasets**; then run `kaggle/run.ipynb` (QUICK first, then full).
+2. **Run E1** locally if not done: `hopmil-compare -m data=elephant,fox,tiger n_jobs=-2`.
+3. Analysis/figures: AUC mean±std tables, baycomp simplex plots, per-experiment
+   `experiments/<name>/report.md`.
+5. `results/` is gitignored but CLAUDE/methodology call the CSVs the committed
+   paper source — reconcile (force-add results CSVs or adjust `.gitignore`).

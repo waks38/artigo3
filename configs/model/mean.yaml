@@ -1,0 +1,3 @@
+# Naive floor: average-pooling (no learned per-instance weights)
+aggregator: mean
+dim: 128

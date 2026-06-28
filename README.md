@@ -14,27 +14,36 @@ predictive performance and interpretability.
 ## Setup
 
 ```bash
-uv sync --extra dev          # creates .venv and installs everything (incl. hopfield-layers from git)
+uv sync --extra dev                              # creates .venv (no Hopfield aggregator)
+PYTHONUTF8=1 uv sync --extra dev --extra hopfield  # add the Hopfield aggregator (builds hflayers from git)
 ```
 
 ## Run
 
 ```bash
-uv run hopmil-train model=hopfield data=musk1            # single run
-uv run hopmil-train -m model=attention,hopfield seed=0,1,2   # sweep over Hydra
-uv run pytest                                            # tests (skips slow/hopfield by default config)
+# compare all 4 aggregators on one dataset (repeated k-fold + Bayesian test):
+uv run hopmil-compare data=elephant                          # classics: local/CPU
+uv run hopmil-compare -m data=elephant,fox,tiger n_jobs=-2   # all classics, parallel folds
+# single training run:
+uv run hopmil-train data=mnist_bags model=hopfield
+uv run pytest                                                 # tests
 ```
+
+Image datasets (mnist/fashion/cifar bags + real histopathology colon/UCSB) run on
+**Kaggle GPU** — see `kaggle/run.ipynb`. Read `docs/NEXT_STEPS.md` to continue.
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `src/hopmil/data/` | `Bag`/`MILDataset` abstractions + dataset loaders |
+| `src/hopmil/data/` | `Bag`/`MILDataset` + loaders (tabular, synthetic bags, real histo) |
 | `src/hopmil/models/aggregators.py` | the swappable core: mean/max/attention/Hopfield |
 | `src/hopmil/models/mil_model.py` | encoder → aggregator → head |
-| `src/hopmil/training/` | Lightning module + Hydra entrypoint |
-| `configs/` | Hydra config groups (`data/`, `model/`) |
-| `experiments/` | reproducible experiment scripts & paper figures |
+| `src/hopmil/training/` | Lightning module + Hydra entrypoints (`train`, `factory`) |
+| `src/hopmil/eval/` | `compare.py` (4-way comparison), `stats.py` (baycomp), `metrics.py` |
+| `configs/` | Hydra config groups (`data/`, `model/`) + `compare.yaml` |
+| `kaggle/` | GPU runner notebook for the image experiments |
+| `docs/` | `NEXT_STEPS.md` (handoff), `ROADMAP.md`, `METHODOLOGY.md` |
 
 ## References
 

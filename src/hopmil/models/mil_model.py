@@ -30,8 +30,8 @@ class MILClassifier(nn.Module):
         """bags: list of (n_instances, in_dim). Returns (logits (B, C), attn weights)."""
         logits, attns = [], []
         for x in bags:
-            h = self.encoder(x)                 # (n, dim)
-            z, w = self.aggregator(h)           # (dim,), (n,) | None
+            h = self.encoder(x)  # (n, dim)
+            z, w = self.aggregator(h)  # (dim,), (n,) | None
             logits.append(self.head(z))
             attns.append(w)
         return torch.stack(logits), attns

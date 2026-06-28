@@ -56,9 +56,9 @@ class ClassicMIL(MILDataset):
             download_fte(root)
 
         x = sio.loadmat(Path(root) / f"{name}.mat")["x"][0, 0]
-        feats = x["data"].astype(np.float32)               # (N, 230)
-        nlab = x["nlab"].ravel()                            # 1=neg, 2=pos
-        milbag = x["ident"][0, 0]["milbag"].ravel()         # 1-indexed bag id
+        feats = x["data"].astype(np.float32)  # (N, 230)
+        nlab = x["nlab"].ravel()  # 1=neg, 2=pos
+        milbag = x["ident"][0, 0]["milbag"].ravel()  # 1-indexed bag id
 
         if normalize:  # z-score per feature across all instances
             feats = (feats - feats.mean(0)) / (feats.std(0) + 1e-8)
@@ -68,11 +68,11 @@ class ClassicMIL(MILDataset):
         self.bags = []
         for bag_id in np.unique(milbag):
             mask = milbag == bag_id
-            label = int((nlab[mask] == 2).any())            # positive iff any pos
+            label = int((nlab[mask] == 2).any())  # positive iff any pos
             self.bags.append(
                 Bag(
-                    instances=feats[mask],                  # (n_i, 230)
+                    instances=feats[mask],  # (n_i, 230)
                     label=torch.tensor(label),
-                    instance_labels=None,                   # no per-instance truth
+                    instance_labels=None,  # no per-instance truth
                 )
             )

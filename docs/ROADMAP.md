@@ -178,27 +178,62 @@ Nemenyi/CD) — optamos por só Bayesiano.*
   - `CIFARBags` (`data/cifar_bags.py`) — com fallback de mirror + cache; verificado no notebook 03.
 - **Notebooks**: 01 (MNIST), 02 (tiger/elephant), 03 (CIFAR). Todos executados.
 - **Testes**: passam (`pytest -m "not slow"`).
+- **Marco 1 (CONCLUÍDO)**: `MILDataModule` (`data/datamodule.py`) com k-fold
+  estratificado + split train/val/test + `mil_collate`; expõe `train_idx/val_idx/
+  test_idx` (folds determinísticos no seed → entrada do teste pareado). `train.py`
+  com wiring Hydra→Lightning completo (`fit`+`test`, `ModelCheckpoint` em val/auc,
+  WandbLogger opcional). Configs `model/{mean,max}.yaml`; grupos `cv`/`loader` no
+  `config.yaml`; `var_bag_size=0` nos sintéticos. `MILLitModule` ganhou `test_step`
+  (test/auc por fold). Validado: `hopmil-train data=elephant model=attention
+  wandb.mode=disabled` treina ponta-a-ponta. Testes de invariantes do fold em
+  `tests/test_datamodule.py`.
 
 ## Próximos passos (plano de ação ordenado para COMEÇAR)
 
-**Marco 1 — pipeline de treino mínimo rodando (1 condição, 1 dataset, local).**
-1. **`DataModule`** com **k-fold** + `mil_collate`; expõe os folds para o teste estatístico.
+**Marco 1 — pipeline de treino mínimo rodando (1 condição, 1 dataset, local). ✅ FEITO.**
+1. ✅ **`DataModule`** com **k-fold** + `mil_collate`; expõe os folds para o teste estatístico.
    Para sintéticos: tamanho de bag **fixo** (`var_bag_size=0`), parametrizado por condição.
-2. **`training/train.py`** — wiring Hydra→Lightning (hoje stub). *Bloqueador do treino.*
-   Validar local no **elephant** com `wandb.mode=disabled`, 1 agregador, ponta-a-ponta.
+2. ✅ **`training/train.py`** — wiring Hydra→Lightning. Validado no **elephant**
+   com `wandb.mode=disabled`, ponta-a-ponta.
 
-**Marco 2 — comparação justa dos 4 agregadores numa condição.**
-3. Rodar os 4 agregadores nos **mesmos folds/seeds**, HP compartilhados idênticos.
-4. **`eval/stats.py`** + dep **`baycomp`**: recebe scores por fold → `(p_left, p_rope, p_right)`.
-5. Reportar **nº de params** por agregador (justiça).
+**Marco 2 — comparação justa dos 4 agregadores numa condição. ✅ FEITO.**
+3. ✅ Rodar os 4 agregadores nos **mesmos folds/seeds** (pareado), HP compartilhados
+   idênticos — `eval/compare.py` (entrypoint `hopmil-compare`), k-fold repetido
+   (default 10×10), early-stopping em val/auc, 1 run W&B por dataset
+   (projeto `artigo-3`), CSVs em `results/`, progresso no terminal.
+4. ✅ **`eval/stats.py`** + dep **`baycomp`**: `compare_bayesian(...)` →
+   `BayesResult(p_a_better, p_rope, p_b_better)` + `verdict`. Orientação do
+   `two_on_single` travada por `tests/test_stats.py`. Metodologia em
+   `docs/METHODOLOGY.md`.
+5. ✅ Reportar **nº de params** por agregador (agregador isolado + modelo total).
 
-**Marco 3 — varreduras e escala.**
-6. Configs de experimento (grupo `experiment/`) para E1–E5 com OFAT a partir do baseline.
-7. **W&B online** (Kaggle Secret) + `experiments/collect.py` (W&B API → `results/*.csv`).
-8. **Kaggle runner** (`kaggle/run.ipynb`) para os experimentos de imagem (GPU).
-9. **Relatório** `experiments/<nome>/report.md` por experimento.
+> **Falta**: rodar de verdade (E1) — `hopmil-compare data=elephant|fox|tiger`
+> (precisa `wandb login` p/ online). É pesado em CPU (~10×10×4 fits/dataset);
+> use `n_jobs=-1` para paralelizar.
 
-> Comece pelo **Marco 1**: é o menor pedaço que prova a pipeline antes de escalar.
+**Extensões já implementadas (pós-Marco 2):**
+- **Suíte completa de métricas por fold** (AUROC, AUPRC, acc, balanced_acc, F1,
+  precision, recall, MCC, brier, log_loss, + localization AUC nos que têm
+  `instance_labels`). Tudo nos CSVs/W&B; Bayesiano roda em toda métrica válida.
+- **`n_jobs`** no `compare.py` (folds em paralelo via joblib, determinístico).
+- **Datasets de imagem ampliados (6)**: `mnist_bags`, `fashion_mnist_bags`,
+  `cifar_bags`, e **histopatologia real** `colon_cancer` (27×27 por núcleo, tem
+  localização) e `ucsb_breast` (32×32 em grade, só rótulo de bag). Dados reais
+  não baixam sozinhos (hosts gated/down) → baixar via Kaggle e apontar `root`.
+
+**Marco 3 — escala (imagem na GPU).**
+- ✅ **Kaggle runner** (`kaggle/run.ipynb` + `kaggle/README.md`): clona o repo,
+  instala `[hopfield]`, lê `WANDB_API_KEY` do Secret, roda `compare` em GPU nos
+  datasets de imagem, salva CSVs em `/kaggle/working`. `QUICK=True` faz um smoke
+  em todos no projeto `artigo-3-smoke`.
+- ❌ **Varreduras OFAT (E3–E5): DESCARTADAS.** Decidido: sintéticos rodam **uma
+  condição fixa** (bag=15, 1 testemunha, balanceado). Catálogo final = **E1
+  (clássicos) + E2 (imagem)**.
+- Falta: **criar o repo no GitHub** (o Kaggle clona de lá) e subir colon/UCSB
+  como **Kaggle Datasets**; depois rodar o notebook (QUICK e depois completo).
+- Falta: **análise/figuras** — tabelas AUC média±desvio, simplex do baycomp,
+  `experiments/<nome>/report.md`. (`compare.py` já grava os CSVs; `collect.py`
+  via W&B API é opcional.)
 
 ## Convenções de experimento (definidas — falta implementar)
 

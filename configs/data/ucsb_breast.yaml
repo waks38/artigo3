@@ -1,0 +1,9 @@
+# Real histopathology MIL, bag-level labels only (UCSB Breast Cancer, 2008)
+name: ucsb_breast
+loader: ucsb_breast
+root: data/raw/ucsb_breast
+patch_size: 32
+white_frac: 0.75       # drop grid tiles that are >75% near-white background
+normalize: true
+num_classes: 1
+in_dim: null           # raw RGB patches; CNN encoder (in_channels=3, image_size=32)

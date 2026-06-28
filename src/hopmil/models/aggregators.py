@@ -53,7 +53,7 @@ class AttentionMIL(Aggregator):
         a = torch.tanh(self.V(x))
         if self.gated:
             a = a * torch.sigmoid(self.U(x))
-        scores = self.w(a).squeeze(-1)          # (n,)
+        scores = self.w(a).squeeze(-1)  # (n,)
         weights = F.softmax(scores, dim=0)
         return weights @ x, weights
 
@@ -86,7 +86,7 @@ class HopfieldMIL(Aggregator):
 
     def forward(self, x):
         # HopfieldPooling expects (batch, seq, dim); a bag is one sequence.
-        out = self.pool(x.unsqueeze(0)).squeeze(0)   # (dim,)
+        out = self.pool(x.unsqueeze(0)).squeeze(0)  # (dim,)
         weights = self.pool.get_association_matrix(x.unsqueeze(0))
         return out, weights.detach().mean(dim=(0, 1)).squeeze() if weights is not None else None
 
