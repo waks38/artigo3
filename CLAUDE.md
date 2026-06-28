@@ -86,9 +86,14 @@ grouping rows by `ident.milbag`; there are no true instance labels.
 - **Configs are Hydra**, composed from `configs/` groups (`data/`, `model/`). Don't
   hardcode hyperparameters in Python — add a config and override via CLI. The
   `model=` group selects the aggregator; `data=` selects the dataset.
-- **Experiment tracking is W&B** (project `hopmil`). Use `wandb.mode=offline` for
-  local/CI runs. *(Exact logging/recovery/report conventions are still being
-  defined — see `docs/ROADMAP.md`.)*
+- **Experiment tracking is W&B** (project `hopmil`): **online via Kaggle Secret**
+  (`WANDB_API_KEY`) on Kaggle; `wandb.mode=offline` locally/CI. Final metrics are
+  pulled back via the W&B API into a **committed CSV in `results/`** (the
+  reproducible source for the paper tables) — don't rely on the dashboard alone.
+- **Experiments**: classics (elephant/fox/tiger) run **locally** (tiny, CPU);
+  image bags run on **Kaggle/GPU**. Each experiment gets an
+  `experiments/<name>/report.md` (hypothesis, exact Hydra command + commit hash +
+  seeds, results table, figures, conclusion).
 - **Lightning** owns the training loop, seeding, and checkpointing — put metrics in
   the `LightningModule`, not in ad-hoc scripts.
 - `data/`, `results/`, `wandb/`, checkpoints are **gitignored**; `uv.lock` is committed.

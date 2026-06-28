@@ -26,6 +26,10 @@ o agregador seja a única variável. Foco em comparação justa e reprodutível
 | Fluxo Kaggle | push GitHub → notebook clona + `pip install -e .` → entrypoint; W&B via Kaggle Secret |
 | Encoder | fixo por modalidade: `MLPEncoder` (tabular), `CNNEncoder` (imagem) |
 | Datasets | MNIST-bags, CIFAR-bags, e elephant/fox/tiger (cada um separado) |
+| W&B no Kaggle | **online via Kaggle Secret** (`WANDB_API_KEY`); local = offline/disabled |
+| Recuperação dos resultados | **W&B API → CSV versionado em `results/`** (artigo reprodutível sem W&B) |
+| Relatórios | **markdown por experimento** em `experiments/<nome>/report.md` |
+| Ambiente | **local p/ clássicos** (200 bags, CPU), **Kaggle/GPU p/ imagem** e pesados |
 
 ## Implementado e verificado
 
@@ -50,23 +54,24 @@ o agregador seja a única variável. Foco em comparação justa e reprodutível
 6. Resolver justiça de parâmetros (reportar nº de params por agregador).
 7. Ablações do Hopfield (β/temperatura, nº de cabeças).
 
-## Decisões EM ABERTO (precisamos definir juntos)
+## Convenções de experimento (definidas — falta implementar)
 
-### A. Ambiente de execução dos experimentos
-- Os clássicos (200 bags) treinam em segundos — rodar **local** ou também no Kaggle?
-- GPU do Kaggle só para CIFAR/MNIST-bags maiores e (futuro) WSI?
-- Como anexar dados no Kaggle (CIFAR/MNIST baixam; clássicos = Figshare ou Kaggle Dataset)?
+### Ambiente
+- **Clássicos (elephant/fox/tiger)**: rodam local (CPU), iteração rápida.
+- **Imagem (CIFAR/MNIST-bags) e futuros pesados (WSI)**: Kaggle com GPU.
+- Dados no Kaggle: MNIST/CIFAR baixam (CIFAR com fallback); clássicos via Figshare ou Kaggle Dataset.
 
-### B. Logging e recuperação dos resultados
-- Modo W&B no Kaggle: **offline + sync** depois, ou online via Secret?
-- O que logar por run: métricas (AUC/acc), curva, pesos de atenção, contagem de params, config completa, seed.
-- Como puxar os números de volta para as tabelas do artigo: export via API do W&B? CSV versionado em `results/`?
-- Checkpoints: salvar quais, onde (gitignored), como recuperar o melhor.
+### Logging e recuperação
+- W&B **online via Kaggle Secret** (`WANDB_API_KEY`); local roda `wandb.mode=offline/disabled`.
+- **Logar por run**: métricas (AUC/acc + curvas), config Hydra completa, seed, commit hash,
+  nº de params do agregador, e (quando houver `instance_labels`) a localization AUC.
+- **Recuperação**: script `experiments/collect.py` puxa as métricas finais via API do W&B e
+  grava `results/<tabela>.csv` (commitado) — fonte reprodutível das tabelas do artigo.
+- Checkpoints: salvar o melhor (val/auc) em `checkpoints/` (gitignored).
 
-### C. Relatórios de experimento
-- Formato: um markdown por experimento em `experiments/<nome>/`? Gerado a partir do W&B?
-- O que cada relatório contém: hipótese, setup, tabela de resultados, figuras, conclusão.
-- Reprodutibilidade: comando Hydra exato + commit hash + seeds.
+### Relatórios
+- Um `experiments/<nome>/report.md` por experimento, contendo: hipótese, setup,
+  **comando Hydra exato + commit hash + seeds**, tabela de resultados, figuras, conclusão.
 
 ## Notebooks (o que cada um mostra)
 - **01_explore_and_forward** — MNIST-bags: anatomia da bag, forward passo a passo, interpretabilidade.
