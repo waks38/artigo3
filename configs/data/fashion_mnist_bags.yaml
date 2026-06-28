@@ -3,8 +3,11 @@ name: fashion_mnist_bags
 loader: fashion_mnist_bags
 root: data/raw
 target_class: 0       # 0=tshirt ... see FASHION_CLASSES
-bag_size: 15          # fixed bag size (no sweeps)
-num_witnesses: 1      # exactly one witness in a positive bag
+bag_mode: ilse        # Ilse/ml-jku style: variable size, >=1 (often multiple) witnesses
+mean_bag_size: 10     # bag size ~ round(Normal(mean, var)), clamped >=1
+var_bag_size: 2       # std of the bag size
+bag_size: 15          # (only used by bag_mode=witness)
+num_witnesses: 1      # (only used by bag_mode=witness)
 positive_ratio: 0.5   # balanced
 num_bags: 250
 num_classes: 1

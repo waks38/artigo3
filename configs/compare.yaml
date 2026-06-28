@@ -19,7 +19,7 @@ dim: 128
 # (mean/max have none). Mirrors configs/model/*.yaml.
 model_specifics:
   attention: {hidden: 128, gated: true}
-  hopfield: {beta: null, num_heads: 1}
+  hopfield: {beta: null, num_heads: 1, hidden_size: 32}   # ml-jku MIL recipe: small association bottleneck, learned sharpness (beta default)
 
 # Repeated stratified k-fold. "The best": 10×10 → 100 paired scores per aggregator.
 cv:
@@ -28,7 +28,7 @@ cv:
   val_frac: 0.2
 
 optim:
-  lr: 1.0e-3
+  lr: 5.0e-4          # ml-jku MIL demo lr; 1e-3 pushed Hopfield into a degenerate constant-output minimum
   weight_decay: 1.0e-4
 
 loader:

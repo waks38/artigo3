@@ -68,7 +68,13 @@ class HopfieldMIL(Aggregator):
     weights are exposed for interpretability comparisons against AttentionMIL.
     """
 
-    def __init__(self, dim: int, beta: float | None = None, num_heads: int = 1) -> None:
+    def __init__(
+        self,
+        dim: int,
+        beta: float | None = None,
+        num_heads: int = 1,
+        hidden_size: int = 32,
+    ) -> None:
         super().__init__(dim)
         try:
             from hflayers import HopfieldPooling  # lazy; optional heavy git dep
@@ -77,11 +83,17 @@ class HopfieldMIL(Aggregator):
                 "HopfieldMIL needs the 'hopfield' extra: `uv sync --extra hopfield`"
             ) from e
 
+        # `hidden_size` bottlenecks the association space (Q/K projection dim). The
+        # ml-jku reference MIL demo uses 32 (<< input_size): fewer association params,
+        # far easier to optimize than the input_size default (which collapsed pooling
+        # to a near-uniform mean here). beta=None -> 1/sqrt(hidden_size); sharpness is
+        # learned via the trainable query + projections, not by inflating beta.
         self.pool = HopfieldPooling(
             input_size=dim,
+            hidden_size=hidden_size,
             output_size=dim,
             num_heads=num_heads,
-            scaling=beta,  # None -> 1/sqrt(d), the standard attention temperature
+            scaling=beta,
         )
 
     def forward(self, x):

@@ -11,7 +11,7 @@ from __future__ import annotations
 from torchvision import datasets
 
 from hopmil.data.mil_dataset import MILDataset
-from hopmil.data.synthetic import make_witness_bags
+from hopmil.data.synthetic import make_bags
 
 FASHION_CLASSES = [
     "tshirt",
@@ -36,8 +36,11 @@ class FashionMNISTBags(MILDataset):
         root: str = "data/raw",
         train: bool = True,
         target_class: int = 0,
+        bag_mode: str = "ilse",
         bag_size: int = 15,
         num_witnesses: int = 1,
+        mean_bag_size: float = 10.0,
+        var_bag_size: float = 2.0,
         positive_ratio: float = 0.5,
         num_bags: int = 250,
         seed: int = 0,
@@ -50,13 +53,16 @@ class FashionMNISTBags(MILDataset):
         images = (images - _MEAN) / _STD
         instances = images.unsqueeze(1)  # (N, 1, 28, 28)
 
-        self.bags = make_witness_bags(
+        self.bags = make_bags(
             instances,
             ds.targets,
             target_class,
+            bag_mode=bag_mode,
             num_bags=num_bags,
             bag_size=bag_size,
             num_witnesses=num_witnesses,
+            mean_bag_size=mean_bag_size,
+            var_bag_size=var_bag_size,
             positive_ratio=positive_ratio,
             seed=seed,
         )

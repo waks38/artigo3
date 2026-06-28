@@ -1,4 +1,5 @@
 aggregator: hopfield
 dim: 128          # encoder output dim = aggregator dim
-beta: null        # inverse temperature; null -> 1/sqrt(dim)
+beta: null        # inverse temperature; null -> 1/sqrt(hidden_size). Sharpness is learned, not set here.
 num_heads: 1
+hidden_size: 32   # association bottleneck (ml-jku MIL demo value); << dim, far easier to train

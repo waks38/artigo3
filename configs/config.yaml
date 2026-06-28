@@ -22,7 +22,7 @@ loader:
   num_workers: 0
 
 optim:
-  lr: 1.0e-3
+  lr: 5.0e-4
   weight_decay: 1.0e-4
 
 wandb:

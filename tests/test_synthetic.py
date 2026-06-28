@@ -1,6 +1,6 @@
 import torch
 
-from hopmil.data.synthetic import make_witness_bags
+from hopmil.data.synthetic import make_bags, make_ilse_bags, make_witness_bags
 
 
 def _toy(n=200, n_classes=10):
@@ -48,3 +48,34 @@ def test_invalid_num_witnesses_raises():
             raise AssertionError("expected ValueError")
         except ValueError:
             pass
+
+
+def test_ilse_bags_variable_size_balanced_multiwitness():
+    inst, lab = _toy()
+    bags = make_ilse_bags(
+        inst, lab, target=3, num_bags=200,
+        mean_bag_size=10, var_bag_size=2, positive_ratio=0.5, seed=0,
+    )
+    assert len(bags) == 200
+    pos = [b for b in bags if int(b.label) == 1]
+    neg = [b for b in bags if int(b.label) == 0]
+    assert len(pos) == 100 and len(neg) == 100                      # balanced
+    assert all(int(b.instance_labels.sum()) >= 1 for b in pos)      # >= 1 witness
+    assert all(int(b.instance_labels.sum()) == 0 for b in neg)      # none in negatives
+    assert any(int(b.instance_labels.sum()) >= 2 for b in pos)      # multi-witness occurs
+    sizes = {b.instances.shape[0] for b in bags}
+    assert len(sizes) > 1                                           # variable bag size
+    assert all(int(b.label) == int(b.instance_labels.any()) for b in bags)
+
+
+def test_make_bags_dispatch():
+    inst, lab = _toy()
+    w = make_bags(inst, lab, target=3, bag_mode="witness", num_bags=10, seed=0)
+    assert all(b.instances.shape[0] == 15 for b in w)               # fixed size
+    i = make_bags(inst, lab, target=3, bag_mode="ilse", num_bags=10, seed=0)
+    assert len({b.instances.shape[0] for b in i}) > 1               # variable size
+    try:
+        make_bags(inst, lab, target=3, bag_mode="bogus", num_bags=5)
+        raise AssertionError("expected ValueError")
+    except ValueError:
+        pass

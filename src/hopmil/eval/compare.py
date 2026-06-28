@@ -59,6 +59,14 @@ def _quiet_lightning() -> None:
         "pytorch_lightning",
     ):
         logging.getLogger(name).setLevel(logging.ERROR)
+    # These two come through the `warnings` module (not logging), so they survive
+    # the logger silencing above. Both are benign for this study: num_workers=0 is
+    # intentional (tiny in-memory bags; the bottleneck is the GPU fit, not loading),
+    # and the LeafSpec deprecation is internal to Lightning, not our code.
+    import warnings
+
+    warnings.filterwarnings("ignore", message=r".*does not have many workers.*")
+    warnings.filterwarnings("ignore", message=r".*LeafSpec.*")
 
 
 def _aggregator_kwargs(cfg: DictConfig, agg: str) -> dict:
@@ -122,6 +130,7 @@ def _fit_task(dataset, cfg, agg, split_seed, r, f, ckpt_dir) -> dict:
     import torch
 
     torch.set_num_threads(1)  # avoid oversubscription when n_jobs > 1
+    _quiet_lightning()  # joblib workers are fresh processes; re-apply log/warning filters
     metrics = _run_one_fold(dataset, cfg, agg, split_seed, f, ckpt_dir)
     return {"aggregator": agg, "repeat": r, "fold": f, **metrics}
 
@@ -325,7 +334,8 @@ def main(cfg: DictConfig) -> None:
                 columns=list(summary_rows[0]), data=[list(r.values()) for r in summary_rows]
             ),
             "bayesian": wandb.Table(
-                columns=list(bayes_rows[0]), data=[list(r.values()) for r in bayes_rows]
+                columns=list(bayes_rows[0]) if bayes_rows else [],
+                data=[list(r.values()) for r in bayes_rows],
             ),
         }
     )
@@ -334,6 +344,8 @@ def main(cfg: DictConfig) -> None:
     results_dir.mkdir(parents=True, exist_ok=True)
 
     def _write_csv(path: Path, data: list[dict]) -> None:
+        if not data:
+            return
         with open(path, "w", newline="", encoding="utf-8") as fh:
             w = csv.DictWriter(fh, fieldnames=list(data[0]))
             w.writeheader()
